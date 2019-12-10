@@ -1,4 +1,5 @@
-import torch 
+import torch
+
 from models import EfficientDet
 
 if __name__ == '__main__':
@@ -9,4 +10,3 @@ if __name__ == '__main__':
     output = model(inputs)
     for p in output:
         print(p.size())
-    

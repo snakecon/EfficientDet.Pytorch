@@ -1,11 +1,9 @@
-import os
 import os.path as osp
 import sys
-import torch
-import torch.utils.data as data
-import torchvision.transforms as transforms
+
 import cv2
 import numpy as np
+import torch.utils.data as data
 
 IMAGES = 'images'
 ANNOTATIONS = 'annotations'
@@ -41,8 +39,10 @@ class COCOAnnotationTransform(object):
     """Transforms a COCO annotation into a Tensor of bbox coords and label index
     Initilized with a dictionary lookup of classnames to indexes
     """
+
     def __init__(self):
-        self.label_map = get_label_map(osp.join('./datasets', 'coco_labels.txt'))
+        self.label_map = get_label_map(
+            osp.join('./datasets', 'coco_labels.txt'))
 
     def __call__(self, target, width, height):
         """
@@ -82,7 +82,8 @@ class COCODetection(data.Dataset):
     """
 
     def __init__(self, root, image_set='trainval35k', transform=None,
-                 target_transform=COCOAnnotationTransform(), dataset_name='MS COCO'):
+                 target_transform=COCOAnnotationTransform(),
+                 dataset_name='MS COCO'):
         sys.path.append(osp.join(root, COCO_API))
         from pycocotools.coco import COCO
         self.root = osp.join(root, IMAGES, image_set)
@@ -115,8 +116,7 @@ class COCODetection(data.Dataset):
             bbox = augmentation['bboxes']
             labels = augmentation['category_id']
 
-        return {'image': img, 'bboxes': bbox, 'category_id': labels} 
-
+        return {'image': img, 'bboxes': bbox, 'category_id': labels}
 
     def __len__(self):
         return len(self.ids)

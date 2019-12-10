@@ -1,6 +1,8 @@
 import warnings
+
 import torch.nn as nn
 import torch.nn.functional as F
+
 
 def conv_ws_2d(input,
                weight,
@@ -16,6 +18,7 @@ def conv_ws_2d(input,
     std = weight_flat.std(dim=1, keepdim=True).view(c_in, 1, 1, 1)
     weight = (weight - mean) / (std + eps)
     return F.conv2d(input, weight, bias, stride, padding, dilation, groups)
+
 
 class ConvWS2d(nn.Conv2d):
     def __init__(self,
@@ -42,11 +45,14 @@ class ConvWS2d(nn.Conv2d):
     def forward(self, x):
         return conv_ws_2d(x, self.weight, self.bias, self.stride, self.padding,
                           self.dilation, self.groups, self.eps)
+
+
 conv_cfg = {
     'Conv': nn.Conv2d,
     'ConvWS': ConvWS2d,
     # TODO: octave conv
 }
+
 
 def build_conv_layer(cfg, *args, **kwargs):
     """ Build convolution layer
@@ -73,6 +79,7 @@ def build_conv_layer(cfg, *args, **kwargs):
 
     return layer
 
+
 norm_cfg = {
     # format: layer_type: (abbreviation, module)
     'BN': ('bn', nn.BatchNorm2d),
@@ -80,6 +87,7 @@ norm_cfg = {
     'GN': ('gn', nn.GroupNorm),
     # and potentially 'SN'
 }
+
 
 def build_norm_layer(cfg, num_features, postfix=''):
     """ Build normalization layer
@@ -123,6 +131,7 @@ def build_norm_layer(cfg, num_features, postfix=''):
         param.requires_grad = requires_grad
 
     return name, layer
+
 
 class ConvModule(nn.Module):
     """A conv block that contains conv/norm/activation layers.
@@ -221,9 +230,11 @@ class ConvModule(nn.Module):
                     self.activation))
             if self.activation == 'relu':
                 self.activate = nn.ReLU(inplace=inplace)
+
     @property
     def norm(self):
         return getattr(self, self.norm_name)
+
     def forward(self, x, activate=True, norm=True):
         for layer in self.order:
             if layer == 'conv':

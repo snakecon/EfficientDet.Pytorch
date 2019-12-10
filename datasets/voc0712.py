@@ -1,9 +1,10 @@
 import os.path as osp
 import sys
-import torch
-import torch.utils.data as data
+
 import cv2
 import numpy as np
+import torch.utils.data as data
+
 if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
 else:
@@ -97,7 +98,8 @@ class VOCDetection(data.Dataset):
         self.ids = list()
         for (year, name) in image_sets:
             rootpath = osp.join(self.root, 'VOC' + year)
-            for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+            for line in open(
+                    osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
                 self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
@@ -119,13 +121,13 @@ class VOCDetection(data.Dataset):
             bbox = augmentation['bboxes']
             labels = augmentation['category_id']
 
-        return {'image': img, 'bboxes': bbox, 'category_id': labels} 
+        return {'image': img, 'bboxes': bbox, 'category_id': labels}
 
     def __len__(self):
         return len(self.ids)
+
     def __num_class__(self):
         return len(VOC_CLASSES)
+
     def label_to_name(self, label):
         return VOC_CLASSES[label]
-    
-    

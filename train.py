@@ -1,17 +1,16 @@
-import os
-import sys
-import time
 import argparse
+import os
+import time
+
 import numpy as np
 import torch
 import torch.optim as optim
-import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 
+from datasets import VOCDetection, COCODetection, get_augumentation, \
+    detection_collate
 from models.efficientdet import EfficientDet
 from models.losses import FocalLoss
-from datasets import VOCDetection, COCODetection, get_augumentation, detection_collate
-
 
 parser = argparse.ArgumentParser(
     description='EfficientDet Training With Pytorch')
@@ -50,19 +49,25 @@ args = parser.parse_args()
 if not os.path.exists(args.save_folder):
     os.mkdir(args.save_folder)
 
+
 def prepare_device(device):
     n_gpu_use = len(device)
     n_gpu = torch.cuda.device_count()
     if n_gpu_use > 0 and n_gpu == 0:
-        print("Warning: There\'s no GPU available on this machine, training will be performed on CPU.")
+        print(
+            "Warning: There\'s no GPU available on this machine, training will be performed on CPU.")
         n_gpu_use = 0
     if n_gpu_use > n_gpu:
-        print("Warning: The number of GPU\'s configured to use is {}, but only {} are available on this machine.".format(n_gpu_use, n_gpu))
+        print(
+            "Warning: The number of GPU\'s configured to use is {}, but only {} are available on this machine.".format(
+                n_gpu_use, n_gpu))
         n_gpu_use = n_gpu
     list_ids = device
-    device = torch.device('cuda:{}'.format(device[0]) if n_gpu_use > 0 else 'cpu')
-    
+    device = torch.device(
+        'cuda:{}'.format(device[0]) if n_gpu_use > 0 else 'cpu')
+
     return device, list_ids
+
 
 def get_state_dict(model):
     if type(model) == torch.nn.DataParallel:
@@ -70,41 +75,46 @@ def get_state_dict(model):
     else:
         state_dict = model.state_dict()
     return state_dict
+
+
 checkpoint = []
-if(args.resume is not None):
+if (args.resume is not None):
     resume_path = str(args.resume)
     print("Loading checkpoint: {} ...".format(resume_path))
-    checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage)
+    checkpoint = torch.load(args.resume,
+                            map_location=lambda storage, loc: storage)
 
 train_dataset = []
-if(args.dataset=='VOC'):
-    train_dataset = VOCDetection(root = args.dataset_root,
-                                transform = get_augumentation(phase='train'))
-elif(args.dataset=='COCO'):
-    train_dataset = COCODetection(root = args.dataset_root,
-                                transform = get_augumentation(phase='train'))
-train_dataloader = DataLoader(train_dataset, 
-                            batch_size=args.batch_size,
-                            num_workers=args.num_worker,
-                            shuffle=True,
-                            collate_fn=detection_collate,
-                            pin_memory=True)
+if (args.dataset == 'VOC'):
+    train_dataset = VOCDetection(root=args.dataset_root,
+                                 transform=get_augumentation(phase='train'))
+elif (args.dataset == 'COCO'):
+    train_dataset = COCODetection(root=args.dataset_root,
+                                  transform=get_augumentation(phase='train'))
+train_dataloader = DataLoader(train_dataset,
+                              batch_size=args.batch_size,
+                              num_workers=args.num_worker,
+                              shuffle=True,
+                              collate_fn=detection_collate,
+                              pin_memory=True)
 
-model = EfficientDet(num_classes = args.num_classes, network = args.network)
-if(args.resume is not None):
+model = EfficientDet(num_classes=args.num_classes, network=args.network)
+if (args.resume is not None):
     # num_class = checkpoint['num_classes']
     # network = checkpoint['network']
-    model = EfficientDet(num_classes = 21, network = 'efficientdet-d0')
+    model = EfficientDet(num_classes=21, network='efficientdet-d0')
     model.load_state_dict(checkpoint['state_dict'])
 device, device_ids = prepare_device(args.device)
 model = model.to(device)
-if(len(device_ids) > 1):
+if (len(device_ids) > 1):
     model = torch.nn.DataParallel(model, device_ids=device_ids)
 
 optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3,
+                                                 verbose=True)
 # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=args.lr, max_lr=0.1)
 criterion = FocalLoss()
+
 
 def train():
     model.train()
@@ -119,7 +129,10 @@ def train():
             images = images.to(device)
             annotations = annotations.to(device)
             classification, regression, anchors = model(images)
-            classification_loss, regression_loss = criterion(classification, regression, anchors, annotations)
+            classification_loss, regression_loss = criterion(classification,
+                                                             regression,
+                                                             anchors,
+                                                             annotations)
             classification_loss = classification_loss.mean()
             regression_loss = regression_loss.mean()
             loss = classification_loss + regression_loss
@@ -127,13 +140,13 @@ def train():
                 print('loss equal zero(0)')
                 continue
             loss.backward()
-            if (idx+1) % args.grad_accumulation_steps == 0:
+            if (idx + 1) % args.grad_accumulation_steps == 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
                 optimizer.step()
                 optimizer.zero_grad()
-            
+
             total_loss.append(loss.item())
-            if(iteration%100==0):
+            if (iteration % 100 == 0):
                 print('{} iteration: training ...'.format(iteration))
                 ans = {
                     'epoch': epoch,
@@ -144,12 +157,12 @@ def train():
                 }
                 for key, value in ans.items():
                     print('    {:15s}: {}'.format(str(key), value))
-                
-            iteration+=1
+
+            iteration += 1
         scheduler.step(np.mean(total_loss))
         result = {
             'time': time.time() - start,
-            'loss': np.mean(total_loss)            
+            'loss': np.mean(total_loss)
         }
         for key, value in result.items():
             print('    {:15s}: {}'.format(str(key), value))
@@ -160,7 +173,8 @@ def train():
             'network': args.network,
             'state_dict': get_state_dict(model)
         }
-        torch.save(state, './weights/checkpoint_{}_{}.pth'.format(args.network, epoch))
+        torch.save(state,
+                   './weights/checkpoint_{}_{}.pth'.format(args.network, epoch))
     state = {
         'arch': arch,
         'num_class': args.num_class,
@@ -168,6 +182,7 @@ def train():
         'state_dict': get_state_dict(model)
     }
     torch.save(state, './weights/Final_{}.pth'.format(args.network))
+
 
 if __name__ == '__main__':
     train()
