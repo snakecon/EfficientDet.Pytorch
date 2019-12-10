@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 from datasets import get_augumentation, VOC_CLASSES
+from flags import use_cuda
 from models import EfficientDet
 from utils import vis_bbox
 
@@ -62,7 +63,8 @@ class Detect(object):
         if (self.weights is not None):
             state_dict = checkpoint['state_dict']
             self.model.load_state_dict(state_dict)
-        self.model = self.model.cuda()
+        if use_cuda:
+            self.model = self.model.cuda()
         self.model.eval()
 
     def process(self, file_name=None, img=None, show=False):
@@ -132,7 +134,7 @@ class Detect(object):
                 return origin_img
 
     def camera(self):
-        cap = cv2.VideoCapture('0')
+        cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("Unable to open camera")
             exit(-1)
