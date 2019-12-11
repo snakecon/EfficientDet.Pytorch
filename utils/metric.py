@@ -3,6 +3,8 @@ from __future__ import print_function
 import numpy as np
 import torch
 
+from flags import use_cuda
+
 
 def compute_overlap(a, b):
     """
@@ -86,8 +88,12 @@ def _get_detections(dataset, model, score_threshold=0.05, max_detections=100,
             scale = data['scale']
 
             # run network
-            scores, labels, boxes = model(
-                data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            if use_cuda:
+                scores, labels, boxes = model(
+                    data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            else:
+                scores, labels, boxes = model(
+                    data['img'].permute(2, 0, 1).float().unsqueeze(dim=0))
             scores = scores.cpu().numpy()
             labels = labels.cpu().numpy()
             boxes = boxes.cpu().numpy()

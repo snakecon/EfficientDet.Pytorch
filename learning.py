@@ -6,6 +6,7 @@ import torch
 from torch.autograd import Variable
 from torchvision.utils import make_grid
 
+from flags import use_cuda
 from utils import TensorboardWriter, MetricTracker
 
 
@@ -35,7 +36,8 @@ class Learning(object):
             # self.model = torch.nn.DataParallel(model, device_ids=device_ids)
             self.model = torch.nn.DataParallel(model)
             # cudnn.benchmark = True
-        self.model = model.cuda()
+        if use_cuda:
+            self.model = model.cuda()
         self.criterion = criterion
         self.metric_ftns = metric_ftns
         self.optimizer = optimizer
@@ -89,7 +91,10 @@ class Learning(object):
         self.optimizer.zero_grad()
         self.train_metrics.reset()
         for idx, (data, target) in enumerate(data_loader):
-            data = Variable(data.cuda())
+            if use_cuda:
+                data = Variable(data.cuda())
+            else:
+                data = Variable(data)
             target = [ann.to(self.device) for ann in target]
             output = self.model(data)
             loss = self.criterion(output, target)

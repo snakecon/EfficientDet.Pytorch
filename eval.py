@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 train_set = parser.add_mutually_exclusive_group()
 parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO'],
                     type=str, help='VOC or COCO')
-parser.add_argument('--dataset_root', default='/root/data/VOCdevkit/',
+parser.add_argument('--dataset_root', default='datasets/VOCdevkit2007/',
                     help='Dataset root directory path [/root/data/VOCdevkit/, /root/data/coco/]')
 parser.add_argument('--network', default='efficientdet-d0',
                     help='Choose model for training')

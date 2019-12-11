@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
 train_set = parser.add_mutually_exclusive_group()
 parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO'],
                     type=str, help='VOC or COCO')
-parser.add_argument('--dataset_root', default='/root/data/VOCdevkit/',
+parser.add_argument('--dataset_root', default='datasets/VOCdevkit2007/',
                     help='Dataset root directory path [/root/data/VOCdevkit/, /root/data/coco/]')
 parser.add_argument('--network', default='efficientdet-d0', type=str,
                     help='efficientdet-[d0, d1, ..]')
@@ -47,7 +47,7 @@ parser.add_argument('--save_folder', default='./saved/weights/', type=str,
                     help='Directory for saving checkpoint models')
 args = parser.parse_args()
 if not os.path.exists(args.save_folder):
-    os.mkdir(args.save_folder)
+    os.makedirs(args.save_folder)
 
 
 def prepare_device(device):
