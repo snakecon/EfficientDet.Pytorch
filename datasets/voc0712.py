@@ -115,6 +115,12 @@ class VOCDetection(data.Dataset):
                 if ymin >= ymax:
                     print('Hit')
                     return True
+                if xmin < 0:
+                    print('Hit')
+                    return True
+                if ymin < 0:
+                    print('Hit')
+                    return True
             return False
 
     def __getitem__(self, index):
