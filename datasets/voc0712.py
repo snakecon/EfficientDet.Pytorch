@@ -43,7 +43,7 @@ class VOCAnnotationTransform(object):
         """
         res = []
         for obj in target.iter('object'):
-            difficult = int(obj.find('difficult').text) == 1
+            difficult = int(float(obj.find('difficult').text)) == 1
             if not self.keep_difficult and difficult:
                 continue
             name = obj.find('name').text.lower().strip()
@@ -52,7 +52,7 @@ class VOCAnnotationTransform(object):
             pts = ['xmin', 'ymin', 'xmax', 'ymax']
             bndbox = []
             for i, pt in enumerate(pts):
-                cur_pt = int(bbox.find(pt).text) - 1
+                cur_pt = int(float(bbox.find(pt).text)) - 1
                 # scale height or width
                 # cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
                 bndbox.append(cur_pt)
@@ -80,7 +80,7 @@ class VOCDetection(data.Dataset):
     """
 
     def __init__(self, root,
-                 image_sets=[('Anime', 'trainval')],
+                 image_sets=[('Anime', 'trainval'), ('Anime7', 'face_train')],
                  transform=None, target_transform=VOCAnnotationTransform(),
                  dataset_name='VOCAnime'):
         self.root = root
@@ -95,10 +95,13 @@ class VOCDetection(data.Dataset):
             rootpath = osp.join(self.root, 'VOC' + year)
             for line in open(
                     osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
-                if not self.is_invalid(rootpath, line.strip()):
-                    self.ids.append((rootpath, line.strip()))
+                if not self.is_invalid(year, rootpath, line.strip()):
+                    self.ids.append((year, rootpath, line.strip()))
 
-    def is_invalid(self, rootpath, filename):
+    def is_invalid(self, year, rootpath, filename):
+        if year == 'Anime7':
+            filename = filename.split('.')[0]
+
         target = ET.parse(self._annopath % (rootpath, filename)).getroot()
         if self.target_transform is not None:
             target = self.target_transform(target, 0, 0)
@@ -114,12 +117,15 @@ class VOCDetection(data.Dataset):
                     return True
             return False
 
-
     def __getitem__(self, index):
-        img_id = self.ids[index]
+        year, rootpath, img_id = self.ids[index]
 
-        target = ET.parse(self._annopath % img_id).getroot()
-        img = cv2.imread(self._imgpath % img_id)
+        _imgpath = self._imgpath
+        if year == 'Anime7':
+            _imgpath = osp.join('%s', 'JPEGImages', '%s.png')
+            img_id = img_id.split('.')[0]
+        target = ET.parse(self._annopath % (rootpath, img_id)).getroot()
+        img = cv2.imread(_imgpath % (rootpath, img_id))
         height, width, channels = img.shape
 
         if self.target_transform is not None:
