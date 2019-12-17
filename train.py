@@ -25,7 +25,7 @@ parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from')
 parser.add_argument('--num_epoch', default=500, type=int,
                     help='Num epoch for training')
-parser.add_argument('--batch_size', default=32, type=int,
+parser.add_argument('--batch_size', default=16, type=int,
                     help='Batch size for training')
 parser.add_argument('--num_worker', default=12, type=int,
                     help='Number of workers used in dataloading')
